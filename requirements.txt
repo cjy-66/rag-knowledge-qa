@@ -1,0 +1,23 @@
+# Web 框架
+fastapi
+uvicorn[standard]
+
+# 大模型 & RAG
+langchain
+langchain-openai
+langchain-community
+
+# 向量数据库
+faiss-cpu
+
+# 文档处理
+pypdf
+pdfplumber
+
+# 前端
+streamlit
+
+# 工具库
+python-dotenv
+python-multipart
+tiktoken
