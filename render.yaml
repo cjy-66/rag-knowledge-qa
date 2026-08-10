@@ -1,0 +1,27 @@
+services:
+  # ── 后端 FastAPI 服务 ──
+  - type: web
+    name: rag-knowledge-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt && pip install sentence-transformers langchain-huggingface
+    startCommand: python -m uvicorn app.api:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: OPENAI_API_KEY
+        value: sk-8a57811bfb394eb18ae1c14021284020
+      - key: OPENAI_API_BASE
+        value: https://api.deepseek.com/v1
+      - key: LLM_MODEL
+        value: deepseek-chat
+      - key: EMBEDDING_MODEL
+        value: BAAI/bge-small-zh-v1.5
+
+  # ── 前端 Streamlit 服务 ──
+  - type: web
+    name: rag-knowledge-frontend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m streamlit run frontend/streamlit_app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true --browser.gatherUsageStats false --server.enableCORS false --server.enableXsrfProtection false
+    envVars:
+      - key: BACKEND_URL
+        sync: false
+        value: https://rag-knowledge-backend.onrender.com
