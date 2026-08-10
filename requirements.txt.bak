@@ -20,9 +20,6 @@ openpyxl
 # 前端
 streamlit
 
-# HTTP 客户端（前端直连后端时需要）
-requests
-
 # 工具库
 python-dotenv
 python-multipart

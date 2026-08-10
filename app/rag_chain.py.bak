@@ -6,7 +6,6 @@ Embedding: 使用本地 HuggingFace 模型（免费、无需 API Key）
 LLM: 通过 OpenAI 兼容接口调用 DeepSeek 等大模型
 """
 import os
-import warnings
 from typing import List, Tuple, Optional
 
 # ⚠️ config 必须在 langchain_huggingface 之前导入，
@@ -132,16 +131,10 @@ class RAGChain:
             self.vector_store.save_local(config.VECTOR_STORE_DIR)
 
     def _load_index(self) -> bool:
-        """从磁盘加载已持久化的向量索引（可通过 FAISS_TRUST_INDEX=0 禁用）"""
+        """从磁盘加载已持久化的向量索引"""
         index_path = os.path.join(config.VECTOR_STORE_DIR, "index.faiss")
         if os.path.exists(index_path):
             try:
-                if not config.FAISS_ALLOW_DANGEROUS_DESERIALIZATION:
-                    warnings.warn(
-                        "FAISS 索引加载已禁用（FAISS_TRUST_INDEX=0），"
-                        "跳过索引加载。请确保索引文件来源可信后再设置 FAISS_TRUST_INDEX=1。"
-                    )
-                    return False
                 self.vector_store = FAISS.load_local(
                     config.VECTOR_STORE_DIR,
                     self.embeddings,
@@ -177,12 +170,8 @@ class RAGChain:
         context_parts = []
         for i, doc in enumerate(retrieved_docs, 1):
             source = doc.metadata.get("source", "未知")
-            page = doc.metadata.get("page")
-            # 仅当 page 是有效整数时才附加页码信息（避免 None + 1 崩溃）
-            if page is not None and isinstance(page, int):
-                page_info = f" (第{page + 1}页)"
-            else:
-                page_info = ""
+            page = doc.metadata.get("page", "")
+            page_info = f" (第{page + 1}页)" if page != "" else ""
             context_parts.append(f"[参考{i}] 来源: {source}{page_info}\n{doc.page_content}")
 
         context = "\n\n".join(context_parts)

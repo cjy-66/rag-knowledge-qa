@@ -3,7 +3,6 @@
 优先级：环境变量 > .env 文件 > 代码默认值
 """
 import os
-import warnings
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,30 +13,6 @@ if os.getenv("HF_MIRROR", "0") == "1":
 if os.getenv("HF_OFFLINE", "0") == "1":
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
-
-
-def _get_int(key: str, default: int) -> int:
-    """安全获取整数环境变量（空字符串不会崩溃，回退到默认值）"""
-    raw = os.getenv(key, "").strip()
-    if not raw:
-        return default
-    try:
-        return int(raw)
-    except ValueError:
-        warnings.warn(f"环境变量 {key}={raw!r} 不是合法整数，使用默认值 {default}")
-        return default
-
-
-def _get_float(key: str, default: float) -> float:
-    """安全获取浮点环境变量"""
-    raw = os.getenv(key, "").strip()
-    if not raw:
-        return default
-    try:
-        return float(raw)
-    except ValueError:
-        warnings.warn(f"环境变量 {key}={raw!r} 不是合法浮点数，使用默认值 {default}")
-        return default
 
 
 class Config:
@@ -54,11 +29,11 @@ class Config:
     )
 
     # ── 文本切分配置 ──
-    CHUNK_SIZE: int = _get_int("CHUNK_SIZE", 500)
-    CHUNK_OVERLAP: int = _get_int("CHUNK_OVERLAP", 50)
+    CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", "500"))
+    CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "50"))
 
     # ── 检索配置 ──
-    TOP_K: int = _get_int("TOP_K", 4)
+    TOP_K: int = int(os.getenv("TOP_K", "4"))
 
     # ── 路径配置 ──
     BASE_DIR: str = os.path.dirname(os.path.abspath(__file__))
@@ -67,20 +42,6 @@ class Config:
 
     # ── LLM 温度 ──
     TEMPERATURE: float = 0.1
-
-    # ── 安全配置 ──
-    # FAISS 索引反序列化：默认信任本地索引文件（仅加载用户自己构建的索引）
-    # 如果索引文件可能被第三方篡改，请设置 FAISS_TRUST_INDEX=0 禁用加载
-    FAISS_ALLOW_DANGEROUS_DESERIALIZATION: bool = (
-        os.getenv("FAISS_TRUST_INDEX", "1") == "1"
-    )
-
-    # CORS 允许的来源（逗号分隔，默认仅本地开发地址）
-    CORS_ORIGINS: list = [
-        origin.strip() for origin in
-        os.getenv("CORS_ORIGINS", "http://localhost:8501,http://localhost:8000").split(",")
-        if origin.strip()
-    ]
 
     @classmethod
     def validate(cls) -> bool:

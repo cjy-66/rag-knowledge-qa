@@ -14,9 +14,9 @@ def run_backend():
     """启动 FastAPI 后端"""
     print(">>> Starting FastAPI backend at http://localhost:8000 ...")
     print("    API docs: http://localhost:8000/docs")
+    # config.py 已根据 .env 中的 HF_MIRROR/HF_OFFLINE 自动配置 HuggingFace 镜像
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
-    env["HF_ENDPOINT"] = "https://hf-mirror.com"
     subprocess.run([
         sys.executable, "-m", "uvicorn",
         "app.api:app",
@@ -32,7 +32,6 @@ def run_frontend():
     print(">>> Starting Streamlit frontend at http://localhost:8501 ...")
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
-    env["HF_ENDPOINT"] = "https://hf-mirror.com"
     subprocess.run([
         sys.executable, "-m", "streamlit", "run",
         frontend_path,
