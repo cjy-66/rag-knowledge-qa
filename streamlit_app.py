@@ -82,7 +82,8 @@ st.markdown(
         --info: #60a5fa;
     }
 
-    .stApp { background: var(--bg-primary); }
+    .stApp { background: #0a0e17 !important; }
+    html, body, [data-testid="stAppViewContainer"] { background: #0a0e17; color: #e8edf5; }
     * { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
 
     /* ===== 侧边栏 ===== */
@@ -255,13 +256,17 @@ st.markdown(
     }
 
     /* ===== 输入区域 ===== */
-    div[data-testid="stTextInput"] input {
-        background: transparent !important; border: none !important;
-        color: var(--text-primary) !important; font-size: 0.95rem !important;
-        padding: 0.6rem 0.4rem !important; outline: none !important; box-shadow: none !important;
+    [data-testid="stTextInput"] input,
+    input[data-testid="stTextInput-"],
+    input[aria-label="question_input"] {
+        background: #161c2a !important; border: 1px solid rgba(255,255,255,0.1) !important;
+        color: #e8edf5 !important; font-size: 0.95rem !important;
+        padding: 0.6rem 0.8rem !important; outline: none !important; box-shadow: none !important;
+        border-radius: 10px !important; caret-color: #c9a84c !important;
     }
-    div[data-testid="stTextInput"] input::placeholder { color: var(--text-muted) !important; }
-    div[data-testid="stTextInput"] label { display: none !important; }
+    [data-testid="stTextInput"] input::placeholder,
+    input[aria-label="question_input"]::placeholder { color: #64748b !important; }
+    [data-testid="stTextInput"] label { display: none !important; }
     [data-testid="stTextInput"] > div { border: none !important; background: transparent !important; }
     [data-testid="stTextInput"] > div:hover,
     [data-testid="stTextInput"] > div:focus-within { border: none !important; box-shadow: none !important; }
