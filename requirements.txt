@@ -6,6 +6,7 @@ uvicorn[standard]
 langchain
 langchain-openai
 langchain-community
+langchain-huggingface
 
 # 向量数据库
 faiss-cpu
@@ -13,6 +14,7 @@ faiss-cpu
 # 文档处理
 pypdf
 pdfplumber
+openpyxl
 
 # 前端
 streamlit
@@ -21,3 +23,4 @@ streamlit
 python-dotenv
 python-multipart
 tiktoken
+sentence-transformers

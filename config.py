@@ -7,11 +7,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ── HuggingFace 配置 ──
-os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
-# 模型已缓存本地，用离线模式跳过网络检查避免卡住
-os.environ["HF_HUB_OFFLINE"] = "1"
-os.environ["TRANSFORMERS_OFFLINE"] = "1"
+# ── HuggingFace 配置（本地开发用镜像+离线；云端部署不设这些变量即可）──
+if os.getenv("HF_MIRROR", "0") == "1":
+    os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
+if os.getenv("HF_OFFLINE", "0") == "1":
+    os.environ["HF_HUB_OFFLINE"] = "1"
+    os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
 
 class Config:
