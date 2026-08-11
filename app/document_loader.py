@@ -27,7 +27,7 @@ def _load_excel(file_path: str) -> List[Document]:
     wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
     filename = Path(file_path).name
     docs = []
-    BATCH_ROWS = 30  # 每 30 行合并为一个 Document
+    BATCH_ROWS = 30
 
     for sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
@@ -49,7 +49,6 @@ def _load_excel(file_path: str) -> List[Document]:
                 ))
                 rows_text = []
 
-        # 最后一批
         if rows_text:
             batch_num += 1
             full_text = f"[工作表: {sheet_name} / 批次 {batch_num}]\n" + "\n".join(rows_text)
@@ -63,21 +62,9 @@ def _load_excel(file_path: str) -> List[Document]:
 
 
 def load_single_document(file_path: str) -> List[Document]:
-    """
-    根据文件类型加载单个文档
-
-    参数:
-        file_path: 文件路径
-
-    返回:
-        List[Document]: LangChain Document 对象列表
-
-    抛出:
-        ValueError: 不支持的文件类型
-    """
+    """根据文件类型加载单个文档"""
     ext = Path(file_path).suffix.lower()
 
-    # Excel 用 openpyxl 自定义加载
     if ext in (".xlsx", ".xls"):
         return _load_excel(file_path)
 
@@ -102,7 +89,6 @@ def load_single_document(file_path: str) -> List[Document]:
 
     docs = loader.load()
 
-    # 为每个文档块打上来源标记
     filename = Path(file_path).name
     for doc in docs:
         doc.metadata["source"] = filename
@@ -112,50 +98,30 @@ def load_single_document(file_path: str) -> List[Document]:
 
 
 def split_documents(docs: List[Document]) -> List[Document]:
-    """
-    对文档列表进行递归文本切分
-
-    参数:
-        docs: 原始 Document 列表
-
-    返回:
-        List[Document]: 切分后的 Document 碎片列表
-    """
+    """对文档列表进行递归文本切分"""
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=config.CHUNK_SIZE,
         chunk_overlap=config.CHUNK_OVERLAP,
         separators=["\n\n", "\n", "。", ".", "！", "？", " ", ""],
         length_function=len,
     )
-
-    chunks = text_splitter.split_documents(docs)
-    return chunks
+    return text_splitter.split_documents(docs)
 
 
 def process_file(file_path: str) -> List[Document]:
-    """
-    完整处理管道：加载 → 切分
-
-    参数:
-        file_path: 文件路径
-
-    返回:
-        List[Document]: 切分好的文档块
-    """
+    """完整处理管道：加载 → 切分"""
     ext = Path(file_path).suffix.lower()
     raw_docs = load_single_document(file_path)
 
-    # Excel/CSV 已按行分批，不再进一步切分，避免产生过多碎片
     if ext in (".xlsx", ".xls", ".csv"):
         return raw_docs
 
-    chunks = split_documents(raw_docs)
-    return chunks
+    return split_documents(raw_docs)
 
 
-def get_all_uploaded_files() -> List[str]:
-    """获取已上传的所有文件列表"""
-    data_dir = config.DATA_DIR
+def get_all_uploaded_files(user_id: str) -> List[str]:
+    """获取指定用户已上传的所有文件列表"""
+    data_dir = os.path.join(config.DATA_DIR, user_id)
     if not os.path.exists(data_dir):
         return []
 
@@ -165,3 +131,50 @@ def get_all_uploaded_files() -> List[str]:
         if f.lower().endswith(supported_exts):
             files.append(f)
     return sorted(files)
+
+
+def cleanup_expired_files(user_id: str) -> dict:
+    """删除超过 FILE_RETENTION_HOURS 的上传文件。
+
+    检查 data/{user_id}/ 下所有支持格式的文件，
+    如果文件的最后修改时间超过阈值则删除。
+    FILE_RETENTION_HOURS=0 时跳过清理。
+
+    Returns:
+        {"deleted": ["file1.pdf",...], "kept": ["file2.xlsx",...], "expired_hours": 24}
+    """
+    if config.FILE_RETENTION_HOURS <= 0:
+        return {"deleted": [], "kept": [], "expired_hours": 0}
+
+    import time
+
+    data_dir = os.path.join(config.DATA_DIR, user_id)
+    if not os.path.exists(data_dir):
+        return {"deleted": [], "kept": [], "expired_hours": config.FILE_RETENTION_HOURS}
+
+    supported_exts = (".pdf", ".txt", ".md", ".markdown", ".csv", ".xlsx", ".xls")
+    threshold_seconds = config.FILE_RETENTION_HOURS * 3600
+    now = time.time()
+
+    deleted = []
+    kept = []
+
+    for fname in os.listdir(data_dir):
+        if not fname.lower().endswith(supported_exts):
+            continue
+        fpath = os.path.join(data_dir, fname)
+        age_seconds = now - os.path.getmtime(fpath)
+        if age_seconds > threshold_seconds:
+            try:
+                os.remove(fpath)
+                deleted.append(fname)
+            except OSError:
+                kept.append(fname)
+        else:
+            kept.append(fname)
+
+    return {
+        "deleted": deleted,
+        "kept": kept,
+        "expired_hours": config.FILE_RETENTION_HOURS,
+    }

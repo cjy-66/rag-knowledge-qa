@@ -293,6 +293,8 @@ THINKING_HTML = """<div class="chat-msg assistant">
 # ═══════════════════════════════════════════════════════════════════════
 
 def init_session():
+    import uuid
+
     defaults = {
         "conv_id": None,
         "messages": [],
@@ -303,6 +305,10 @@ def init_session():
     for key, val in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = val
+
+    # 为每个浏览器会话生成唯一 user_id，用于数据隔离
+    if "user_id" not in st.session_state:
+        st.session_state.user_id = uuid.uuid4().hex[:12]
 
 
 def render_css():

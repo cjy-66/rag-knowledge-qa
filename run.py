@@ -29,14 +29,17 @@ def run_backend():
 def run_frontend():
     """启动 Streamlit 前端"""
     frontend_path = os.path.join(os.path.dirname(__file__), "frontend", "streamlit_app.py")
-    print(">>> Starting Streamlit frontend at http://localhost:8501 ...")
+    print(">>> Starting Streamlit frontend ...")
+    print("    Local:  http://localhost:8501")
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
     subprocess.run([
         sys.executable, "-m", "streamlit", "run",
         frontend_path,
         "--server.port", "8501",
-        "--server.address", "localhost",
+        "--server.address", "0.0.0.0",
+        "--server.enableCORS", "true",
+        "--server.enableXsrfProtection", "true",
     ], env=env)
 
 

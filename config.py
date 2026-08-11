@@ -75,10 +75,13 @@ class Config:
         os.getenv("FAISS_TRUST_INDEX", "1") == "1"
     )
 
+    # ── 文件留存时间（小时），过期自动删除。0 表示永不自动删除 ──
+    FILE_RETENTION_HOURS: int = _get_int("FILE_RETENTION_HOURS", 24)
+
     # CORS 允许的来源（逗号分隔，默认仅本地开发地址）
     CORS_ORIGINS: list = [
         origin.strip() for origin in
-        os.getenv("CORS_ORIGINS", "http://localhost:8501,http://localhost:8000").split(",")
+        os.getenv("CORS_ORIGINS", "*").split(",")
         if origin.strip()
     ]
 
