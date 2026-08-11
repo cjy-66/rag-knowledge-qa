@@ -78,6 +78,9 @@ class Config:
     # ── 文件留存时间（小时），过期自动删除。0 表示永不自动删除 ──
     FILE_RETENTION_HOURS: int = _get_int("FILE_RETENTION_HOURS", 24)
 
+    # ── 智能检索最大轮数 ──
+    MAX_RETRIEVAL_ROUNDS: int = _get_int("MAX_RETRIEVAL_ROUNDS", 2)
+
     # CORS 允许的来源（逗号分隔，默认仅本地开发地址）
     CORS_ORIGINS: list = [
         origin.strip() for origin in

@@ -5,6 +5,7 @@ Provides dark theme CSS, session initialization, sidebar & main area rendering.
 Each entry point defines a ``DataLayer`` dict, then calls
 ``render_css()``, ``render_sidebar(dl)``, and ``render_main(dl)``.
 """
+import time
 import streamlit as st
 
 
@@ -306,9 +307,17 @@ def init_session():
         if key not in st.session_state:
             st.session_state[key] = val
 
-    # 为每个浏览器会话生成唯一 user_id，用于数据隔离
-    if "user_id" not in st.session_state:
+    # ── user_id 持久化：URL 参数 > session_state，刷新/重启不丢失 ──
+    uid_param = st.query_params.get("uid", "")
+    if uid_param:
+        st.session_state.user_id = uid_param
+    elif "user_id" in st.session_state:
+        # session 有但 URL 没有 → 写入 URL（一次 rerun 后稳定）
+        st.query_params["uid"] = st.session_state.user_id
+    else:
+        # 全新会话 → 生成 uid → 写入 URL
         st.session_state.user_id = uuid.uuid4().hex[:12]
+        st.query_params["uid"] = st.session_state.user_id
 
 
 def render_css():
@@ -436,20 +445,27 @@ def render_sidebar(dl: dict):
             """<div style="font-weight:600;color:#e8edf5;font-size:0.85rem;margin-bottom:0.3rem;">上传文档</div>""",
             unsafe_allow_html=True,
         )
+
+        # 每次成功上传后递增 key，强制 widget 重置，避免文件残留导致误重复上传
+        upload_key = f"file_uploader_{st.session_state.get('_upload_count', 0)}"
         uploaded_file = st.file_uploader(
             "PDF / TXT / MD / Excel / CSV",
             type=["pdf", "txt", "md", "markdown", "csv", "xlsx", "xls"],
             label_visibility="collapsed",
+            key=upload_key,
         )
         if uploaded_file is not None:
             if st.button("开始上传", use_container_width=True, type="primary"):
-                with st.spinner(f"正在解析 {uploaded_file.name} ..."):
+                with st.spinner(f"正在上传并解析 {uploaded_file.name} ..."):
                     result = dl["upload_doc"](uploaded_file)
                 if "error" in result:
                     st.error(f"上传失败: {result['error']}")
                 else:
+                    st.toast(f"✅ {uploaded_file.name} 上传完成", icon="✅")
+                    st.session_state._upload_count = st.session_state.get("_upload_count", 0) + 1
                     st.success(result.get("message", "OK"))
                     dl.get("on_upload_ok", lambda: None)()
+                    time.sleep(0.8)
                     st.rerun()
 
         st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
@@ -478,7 +494,8 @@ def render_sidebar(dl: dict):
                         st.rerun()
 
         st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
-        top_k = st.slider("检索数量", min_value=1, max_value=10, value=4)
+        top_k = st.slider("每轮检索条数", min_value=3, max_value=8, value=4,
+                          help="每轮从知识库检索多少条文档片段。越多信息越全，但速度略慢")
         st.session_state.top_k = top_k
 
 
